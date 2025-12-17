@@ -12,6 +12,20 @@
 	let threshold: number = $state(3);
 	let shares: string[] = $state([]);
 	let validationMessages: string[] = $state([]);
+	let showSecret: boolean = $state(false);
+
+	const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?';
+
+	function generateSecureSecret() {
+		const length = 32;
+		const array = new Uint32Array(length);
+		crypto.getRandomValues(array);
+		let result = '';
+		for (let i = 0; i < length; i++) {
+			result += CHARSET[array[i] % CHARSET.length];
+		}
+		secret = result;
+	}
 
 	function getValidationMessages(): string[] {
 		let result: string[] = [];
@@ -54,7 +68,29 @@
 			title="Secret:"
 			description="This is the secret you want to share with others."
 		/>
-		<input id="Secret" type="text" bind:value={secret} class="text-black rounded-lg p-1 mt-2 w-full" />
+		<div class="flex gap-2 mt-2">
+			<input 
+				id="Secret" 
+				type={showSecret ? 'text' : 'password'} 
+				bind:value={secret} 
+				class="text-black rounded-lg p-1 flex-grow" 
+			/>
+			<button
+				type="button"
+				onclick={() => showSecret = !showSecret}
+				class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm"
+				title={showSecret ? 'Hide secret' : 'Show secret'}
+			>
+				{showSecret ? 'Hide' : 'Show'}
+			</button>
+		</div>
+		<button
+			type="button"
+			onclick={generateSecureSecret}
+			class="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm w-full"
+		>
+			Generate Secure Secret (32 characters)
+		</button>
 	</div>
 
 	<div class="mb-6 p-5 bg-indigo-400 rounded-3xl">

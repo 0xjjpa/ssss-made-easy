@@ -17,6 +17,7 @@
 	let warningMessages: string[] = $state([]);
 	let errorMessages: string[] = $state([]);
 	let showQrCodeScanner = $state(false);
+	let showSecret = $state(false);
 
 	run(() => {
 		shares = txtShares.split('\n').filter((s) => s.trim().length > 0);
@@ -47,6 +48,7 @@
 	function onCombine() {
 		validate();
 		secret = '';
+		showSecret = false;
 		if (shares.length >= 2) {
 			try {
 				secret = combineSecret(shares);
@@ -59,6 +61,7 @@
 	function onClear() {
 		secret = '';
 		txtShares = '';
+		showSecret = false;
 	}
 
 	function onPaste() {
@@ -148,7 +151,28 @@
 
 	{#if secret.length > 0}
 		<h3 class="text-3xl font-bold mt-6 mb-3 mx-auto leading-tight text-white">Reconstructed secret</h3>
-		<SecretDisplay {secret} />
+		
+		<div class="flex items-center gap-3 mb-3">
+			<label class="flex items-center cursor-pointer">
+				<input 
+					type="checkbox" 
+					bind:checked={showSecret}
+					class="sr-only peer"
+				/>
+				<div class="relative w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+				<span class="ms-3 text-sm font-medium text-white">{showSecret ? 'Secret visible' : 'Secret hidden'}</span>
+			</label>
+		</div>
+
+		{#if showSecret}
+			<SecretDisplay {secret} />
+		{:else}
+			<div class="sm:rounded-2xl rounded-lg bg-gray-500 sm:px-2 px-1 sm:py-2 py-1 m-1 text-black flex">
+				<div class="sm:p-2 p-1 truncate font-mono text-ellipsis flex-grow">
+					{'*'.repeat(secret.length)}
+				</div>
+			</div>
+		{/if}
 
 		<div class="max-w-sm mt-6">
 			<RoundButton fullWidth={true} on:click={onCopySecret}>Copy to clipboard</RoundButton>
