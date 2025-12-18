@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import * as esbuild from 'esbuild';
 
 const BUILD_DIR = 'build';
 const OUTPUT_FILE = 'build/ssss-made-easy-offline.html';
@@ -8,113 +9,21 @@ function readFile(filePath) {
 	return fs.readFileSync(filePath, 'utf-8');
 }
 
-function getAssetPath(href, baseDir) {
-	if (href.startsWith('/')) {
-		return path.join(BUILD_DIR, href);
-	}
-	return path.join(baseDir, href);
-}
-
-function inlineCSS(html, baseDir) {
-	const cssLinkRegex = /<link\s+[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi;
-	
-	return html.replace(cssLinkRegex, (match, href) => {
-		try {
-			const cssPath = getAssetPath(href, baseDir);
-			if (fs.existsSync(cssPath)) {
-				const cssContent = readFile(cssPath);
-				return `<style>${cssContent}</style>`;
-			}
-		} catch (e) {
-			console.warn(`Could not inline CSS: ${href}`, e.message);
-		}
-		return match;
-	});
-}
-
-function inlineJS(html, baseDir) {
-	const scriptRegex = /<script\s+([^>]*)src=["']([^"']+)["']([^>]*)><\/script>/gi;
-	
-	return html.replace(scriptRegex, (match, before, src, after) => {
-		try {
-			const jsPath = getAssetPath(src, baseDir);
-			if (fs.existsSync(jsPath)) {
-				let jsContent = readFile(jsPath);
-				jsContent = resolveImports(jsContent, path.dirname(jsPath));
-				const attrs = (before + after).replace(/type=["']module["']/gi, '').trim();
-				return `<script${attrs ? ' ' + attrs : ''}>${jsContent}</script>`;
-			}
-		} catch (e) {
-			console.warn(`Could not inline JS: ${src}`, e.message);
-		}
-		return match;
-	});
-}
-
-function resolveImports(jsContent, baseDir) {
-	const importRegex = /import\s*(?:\{[^}]*\}|[^'"]*)\s*from\s*["']([^"']+)["']/g;
-	const dynamicImportRegex = /import\s*\(\s*["']([^"']+)["']\s*\)/g;
-	
-	const allImports = new Set();
-	let match;
-	
-	while ((match = importRegex.exec(jsContent)) !== null) {
-		allImports.add(match[1]);
-	}
-	while ((match = dynamicImportRegex.exec(jsContent)) !== null) {
-		allImports.add(match[1]);
-	}
-	
-	for (const importPath of allImports) {
-		try {
-			let resolvedPath;
-			if (importPath.startsWith('/')) {
-				resolvedPath = path.join(BUILD_DIR, importPath);
-			} else if (importPath.startsWith('.')) {
-				resolvedPath = path.join(baseDir, importPath);
-			} else {
-				continue;
-			}
-			
-			if (fs.existsSync(resolvedPath)) {
-				let importedContent = readFile(resolvedPath);
-				importedContent = resolveImports(importedContent, path.dirname(resolvedPath));
-			}
-		} catch (e) {
-			console.warn(`Could not resolve import: ${importPath}`, e.message);
-		}
-	}
-	
-	return jsContent;
-}
-
-function getAllJSFiles(dir, files = []) {
+function getAllFiles(dir, extension, files = []) {
+	if (!fs.existsSync(dir)) return files;
 	const items = fs.readdirSync(dir);
 	for (const item of items) {
 		const fullPath = path.join(dir, item);
 		if (fs.statSync(fullPath).isDirectory()) {
-			getAllJSFiles(fullPath, files);
-		} else if (item.endsWith('.js')) {
+			getAllFiles(fullPath, extension, files);
+		} else if (item.endsWith(extension)) {
 			files.push(fullPath);
 		}
 	}
 	return files;
 }
 
-function getAllCSSFiles(dir, files = []) {
-	const items = fs.readdirSync(dir);
-	for (const item of items) {
-		const fullPath = path.join(dir, item);
-		if (fs.statSync(fullPath).isDirectory()) {
-			getAllCSSFiles(fullPath, files);
-		} else if (item.endsWith('.css')) {
-			files.push(fullPath);
-		}
-	}
-	return files;
-}
-
-function bundleToSingleFile() {
+async function bundleToSingleFile() {
 	console.log('Bundling SvelteKit output to single HTML file...');
 	
 	const indexPath = path.join(BUILD_DIR, 'index.html');
@@ -125,27 +34,106 @@ function bundleToSingleFile() {
 	
 	let html = readFile(indexPath);
 	
-	const cssFiles = getAllCSSFiles(BUILD_DIR);
+	const cssFiles = getAllFiles(BUILD_DIR, '.css');
 	let allCSS = '';
 	for (const cssFile of cssFiles) {
+		console.log(`Including CSS: ${cssFile}`);
 		allCSS += readFile(cssFile) + '\n';
 	}
 	
-	const jsFiles = getAllJSFiles(BUILD_DIR);
-	let allJS = '';
-	for (const jsFile of jsFiles) {
-		allJS += readFile(jsFile) + '\n';
+	const appDir = path.join(BUILD_DIR, '_app/immutable');
+	const allJsFiles = getAllFiles(appDir, '.js');
+	
+	console.log(`Found ${allJsFiles.length} JavaScript files to process`);
+	
+	const moduleExports = {};
+	
+	for (const jsFile of allJsFiles) {
+		const relativePath = '/_app/immutable/' + path.relative(appDir, jsFile).replace(/\\/g, '/');
+		
+		try {
+			const result = await esbuild.build({
+				entryPoints: [jsFile],
+				bundle: true,
+				write: false,
+				format: 'esm',
+				minify: true,
+				target: 'es2020',
+				platform: 'browser',
+				mainFields: ['browser', 'module', 'main'],
+				conditions: ['browser'],
+				define: {
+					'import.meta.url': `"${relativePath}"`,
+					'import.meta.env.SSR': 'false',
+					'import.meta.env.DEV': 'false', 
+					'import.meta.env.PROD': 'true',
+				},
+				logLevel: 'silent',
+			});
+			
+			moduleExports[relativePath] = result.outputFiles[0].text;
+		} catch (e) {
+			moduleExports[relativePath] = readFile(jsFile);
+		}
 	}
 	
+	console.log(`Processed ${Object.keys(moduleExports).length} modules`);
+
+	const loaderScript = `
+<script type="module">
+const __modules__ = {};
+const __cache__ = {};
+
+${Object.entries(moduleExports).map(([path, code]) => {
+	const safeName = path.replace(/[^a-zA-Z0-9]/g, '_');
+	return `
+__modules__["${path}"] = async function() {
+  if (__cache__["${path}"]) return __cache__["${path}"];
+  const blob = new Blob([${JSON.stringify(code)}], {type: 'application/javascript'});
+  const url = URL.createObjectURL(blob);
+  try {
+    const mod = await import(url);
+    __cache__["${path}"] = mod;
+    return mod;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+};`;
+}).join('\n')}
+
+const originalFetch = window.fetch;
+window.fetch = async function(url, options) {
+  const urlStr = typeof url === 'string' ? url : url.toString();
+  if (urlStr.includes('/_app/') && urlStr.endsWith('.js')) {
+    const path = new URL(urlStr, location.href).pathname;
+    if (__modules__[path]) {
+      const code = await __modules__[path]();
+      return new Response(JSON.stringify(code), {
+        headers: {'Content-Type': 'application/javascript'}
+      });
+    }
+  }
+  return originalFetch.call(this, url, options);
+};
+
+const startPath = Object.keys(__modules__).find(p => p.includes('/entry/start'));
+if (startPath) {
+  __modules__[startPath]().then(() => {
+    console.log('SvelteKit offline initialized');
+  }).catch(e => {
+    console.error('Init error:', e);
+  });
+}
+</script>`;
+
 	html = html.replace(/<link\s+[^>]*rel=["']stylesheet["'][^>]*>/gi, '');
-	html = html.replace(/<script\s+[^>]*src=["'][^"']+["'][^>]*><\/script>/gi, '');
 	html = html.replace(/<link\s+[^>]*rel=["']modulepreload["'][^>]*>/gi, '');
+	html = html.replace(/<script\s+type=["']module["'][^>]*>[\s\S]*?<\/script>/gi, '');
 	
 	const styleTag = `<style>${allCSS}</style>`;
 	html = html.replace('</head>', `${styleTag}</head>`);
 	
-	const scriptTag = `<script type="module">${allJS}</script>`;
-	html = html.replace('</body>', `${scriptTag}</body>`);
+	html = html.replace('</body>', `${loaderScript}</body>`);
 	
 	fs.writeFileSync(OUTPUT_FILE, html, 'utf-8');
 	
@@ -154,4 +142,4 @@ function bundleToSingleFile() {
 	console.log('This file can be downloaded and used offline.');
 }
 
-bundleToSingleFile();
+bundleToSingleFile().catch(console.error);
