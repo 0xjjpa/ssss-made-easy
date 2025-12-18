@@ -4,8 +4,8 @@
         "private": true,
         "scripts": {
                 "dev": "vite dev",
-                "build": "vite build",
-                "build:singlefile": "vite build && node scripts/bundle-singlefile.js",
+                "build": "svelte-kit sync && vite build",
+                "build:singlefile": "npm run build && node scripts/bundle-singlefile.js",
                 "preview": "vite preview",
                 "test": "playwright test",
                 "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
