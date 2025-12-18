@@ -1,13 +1,16 @@
-import { sveltekit } from '@sveltejs/kit/vite';
-import type { UserConfig } from 'vite';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { viteSingleFile } from 'vite-plugin-singlefile';
 
-const config: UserConfig = {
-	plugins: [sveltekit()],
-	server: {
-		host: '0.0.0.0',
-		port: 5000,
-		allowedHosts: true
-	}
-};
-
-export default config;
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    mode === 'singlefile' ? viteSingleFile({ removeViteModuleLoader: true }) : undefined,
+  ].filter(Boolean),
+  build: {
+    outDir: 'build',
+  },
+  server: {
+    port: 5173,
+  },
+}));
