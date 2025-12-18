@@ -18,9 +18,23 @@
         let errorMessages: string[] = $state([]);
         let showQrCodeScanner = $state(false);
         let showSecret = $state(false);
+        let secretHash: string = $state('');
+
+        async function computeSha256(text: string): Promise<string> {
+                if (!text) return '';
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
         run(() => {
                 shares = txtShares.split('\n').filter((s) => s.trim().length > 0);
+        });
+
+        run(() => {
+                computeSha256(secret).then(hash => secretHash = hash);
         });
 
         function onScanQrCode() {
@@ -171,6 +185,12 @@
                                 <div class="sm:p-2 p-1 truncate font-mono text-ellipsis flex-grow">
                                         {'*'.repeat(secret.length)}
                                 </div>
+                        </div>
+                {/if}
+
+                {#if secretHash}
+                        <div class="mt-3 text-xs text-gray-300 break-all">
+                                <span class="font-semibold">SHA256:</span> {secretHash}
                         </div>
                 {/if}
 

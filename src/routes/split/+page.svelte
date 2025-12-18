@@ -1,4 +1,5 @@
 <script lang="ts">
+        import { run } from 'svelte/legacy';
         import LabelWithDescription from '$lib/LabelWithDescription.svelte';
         import RoundButton from '$lib/RoundButton.svelte';
         import { splitSecret } from '$lib/ssss-util';
@@ -13,8 +14,22 @@
         let shares: string[] = $state([]);
         let validationMessages: string[] = $state([]);
         let showSecret: boolean = $state(false);
+        let secretHash: string = $state('');
 
         const CHARSET = 'ABCDEFGHJKMNPQRTUVWXYZ234679-';
+
+        async function computeSha256(text: string): Promise<string> {
+                if (!text) return '';
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        run(() => {
+                computeSha256(secret).then(hash => secretHash = hash);
+        });
 
         function generateSecureSecret() {
                 const length = 32;
@@ -91,6 +106,11 @@
                 >
                         Generate Secure Secret (32 characters)
                 </button>
+                {#if secretHash}
+                        <div class="mt-3 text-xs text-indigo-100 break-all">
+                                <span class="font-semibold">SHA256:</span> {secretHash}
+                        </div>
+                {/if}
         </div>
 
         <div class="mb-6 p-5 bg-indigo-400 rounded-3xl">
