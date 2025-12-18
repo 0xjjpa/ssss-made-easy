@@ -4,6 +4,7 @@
     "useDefineForClassFields": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
+    "baseUrl": ".",
     "skipLibCheck": true,
     "allowJs": false,
     "esModuleInterop": true,
@@ -15,7 +16,13 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "react": ["./src/lib/react"],
+      "react/jsx-runtime": ["./src/lib/react-jsx-runtime"],
+      "react-dom/client": ["./src/lib/react-dom-client"],
+      "react-router-dom": ["./src/lib/react-router-dom"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
