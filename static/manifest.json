@@ -1,0 +1,19 @@
+{
+  "name": "SSSS Made Easy",
+  "short_name": "SSSS",
+  "description": "Split and combine secrets using Shamir's Secret Sharing Scheme",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f2937",
+  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "security"]
+}
