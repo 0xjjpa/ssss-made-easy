@@ -13,7 +13,7 @@
 <Navbar  >
         {#snippet children({ hidden, toggle })}
                 <NavBrand href="/">
-                        <span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white"> SSSS-made-easy </span>
+                        <span class="self-center whitespace-nowrap text-xl font-semibold dark:text-white"> SSSS Toolkit </span>
                 </NavBrand>
                 <NavHamburger on:click={toggle} />
                 <NavUl {hidden}>

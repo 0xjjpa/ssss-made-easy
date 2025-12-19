@@ -1,11 +1,12 @@
 {
-        "name": "ssss-made-easy",
+        "name": "ssss-toolkit",
         "version": "0.0.1",
         "private": true,
         "scripts": {
-                "dev": "vite dev",
-                "build": "vite build",
-                "build:singlefile": "vite build && node scripts/bundle-singlefile.js",
+                "version": "git rev-parse --short HEAD > src/lib/assets/version.txt",
+                "dev": "npm run version && vite dev",
+                "build": "npm run version && vite build",
+                "build:singlefile": "npm run version && vite build && node scripts/bundle-singlefile.js",
                 "preview": "vite preview",
                 "test": "playwright test",
                 "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

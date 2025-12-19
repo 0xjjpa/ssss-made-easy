@@ -1,4 +1,4 @@
-# SSSS Made Easy
+# SSSS Toolkit
 
 ## Overview
 A Progressive Web App (PWA) for Shamir's Secret Sharing Scheme (SSSS). Allows users to split secrets into multiple shares and reconstruct them, with secure random generation and verification features.
