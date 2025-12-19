@@ -60,11 +60,11 @@
                 return result;
         }
 
-        function onSplit() {
+        async function onSplit() {
                 try {
                         validationMessages = getValidationMessages();
                         if (validationMessages.length == 0) {
-                                shares = splitSecret(secret, token, numShares, threshold);
+                                shares = await splitSecret(secret, token, numShares, threshold);
                         } else {
                                 shares = [];
                         }

@@ -59,13 +59,13 @@
                 errorMessages = [];
         }
 
-        function onCombine() {
+        async function onCombine() {
                 validate();
                 secret = '';
                 showSecret = false;
                 if (shares.length >= 2) {
                         try {
-                                secret = combineSecret(shares);
+                                secret = await combineSecret(shares);
                         } catch (ex) {
                                 errorMessages.push('' + ex);
                         } // try/catch

@@ -1,16 +1,18 @@
-# ssss-made-easy
+# SSSS Toolkit
 
 ## Introduction
 
-This is a frontend for [`ssss-js`][2], a JavaScript implementation of [Shamir's Secret Sharing Scheme][1].
-It provides some additional convenience features over the sample page provided by `ssss-js` itself.
+This is a frontend for [`shamir-secret-sharing`][2], an audited JavaScript implementation of [Shamir's Secret Sharing Scheme][1].
+It provides convenient features for splitting and combining secrets:
 
 * Share secret shares via QR Code
 * Scan a QR code to enter a share for combination
+* Generate secure random secrets
+* SHA256 hash verification
 
 All of this is performed locally in the browser, no data is sent to the server. It is as safe as your browser is (judge for yourself!).
 
-This project is released under the terms of the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3), since it's main dependency, `ssss-js` is also released under the terms of this license.
+This project is released under the terms of the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3).
 
 ## Try it out
 
@@ -41,4 +43,4 @@ You can preview the production build with `npm run preview`.
 
 
 [1]: https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing
-[2]: https://www.npmjs.com/package/ssss-js
+[2]: https://www.npmjs.com/package/shamir-secret-sharing

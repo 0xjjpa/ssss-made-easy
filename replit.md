@@ -14,7 +14,7 @@ A Progressive Web App (PWA) for Shamir's Secret Sharing Scheme (SSSS). Allows us
 ## Tech Stack
 - SvelteKit with static adapter
 - Tailwind CSS + Flowbite Svelte
-- ssss-js library for Shamir's Secret Sharing
+- shamir-secret-sharing library (audited) for Shamir's Secret Sharing
 - Service Worker for offline caching
 
 ## Project Structure
